@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finance">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+<link rel="icon" href="/static/icons/icon-192.png">
+<title>Finance Manager</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ============ AUTH ============ -->
+<section id="auth" class="screen hidden">
+  <div class="auth-card">
+    <div class="logo">💰</div>
+    <h1>Finance Manager</h1>
+    <p class="muted">Track income, expenses and budget. Your data stays in your own account.</p>
+    <div class="seg" id="authTabs">
+      <button class="active" data-mode="login">Log in</button>
+      <button data-mode="register">Sign up</button>
+    </div>
+    <form id="authForm" autocomplete="on">
+      <label>Username
+        <input id="authUser" autocomplete="username" autocapitalize="none" required minlength="3" maxlength="30">
+      </label>
+      <label>Password
+        <input id="authPass" type="password" autocomplete="current-password" required minlength="6">
+      </label>
+      <div id="authErr" class="error"></div>
+      <button class="btn primary" id="authBtn" type="submit">Log in</button>
+    </form>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="app" class="screen hidden">
+  <header class="topbar">
+    <div>
+      <div class="hello">Hi, <span id="whoami"></span></div>
+      <div class="muted small" id="monthLabel"></div>
+    </div>
+    <div class="month-nav">
+      <button class="icon-btn" id="prevMonth" aria-label="Previous month">‹</button>
+      <button class="icon-btn" id="nextMonth" aria-label="Next month">›</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME / SUMMARY (feature 6) -->
+    <div class="tab" id="tab-home">
+      <div class="hero card">
+        <div class="muted small">Balance this month</div>
+        <div class="big" id="sBalance">0.00</div>
+        <div class="row two">
+          <div><span class="dot inc"></span><span class="muted small">Income</span><div class="val inc-t" id="sIncome">0.00</div></div>
+          <div><span class="dot exp"></span><span class="muted small">Expenses</span><div class="val exp-t" id="sExpense">0.00</div></div>
+        </div>
+        <div class="muted small" id="sSaving"></div>
+      </div>
+
+      <div class="card" id="budgetCard">
+        <div class="card-head">
+          <h3>Monthly budget</h3>
+          <button class="link" id="editBudget">Set / edit</button>
+        </div>
+        <div id="budgetBody" class="muted">No budget set for this month.</div>
+      </div>
+
+      <div class="card">
+        <h3>Top spending</h3>
+        <div id="homeCats"><span class="muted small">No expenses yet.</span></div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS (features 3, 7, 8) -->
+    <div class="tab hidden" id="tab-tx">
+      <div class="card filters">
+        <input id="fText" type="search" placeholder="Search category or note…">
+        <div class="row three">
+          <select id="fType">
+            <option value="">All types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+          <input id="fMin" type="number" inputmode="decimal" placeholder="Min">
+          <input id="fMax" type="number" inputmode="decimal" placeholder="Max">
+        </div>
+        <label class="check"><input type="checkbox" id="fAllTime"> Search across all months</label>
+      </div>
+      <div id="txList"></div>
+    </div>
+
+    <!-- CATEGORIES (feature 5) -->
+    <div class="tab hidden" id="tab-cat">
+      <div class="card">
+        <h3>Spending by category</h3>
+        <div class="muted small" id="catTotal"></div>
+        <div id="catList"></div>
+      </div>
+    </div>
+
+    <!-- MORE -->
+    <div class="tab hidden" id="tab-more">
+      <div class="card">
+        <h3>Account</h3>
+        <a class="btn" href="/api/export">Download my data (CSV)</a>
+        <button class="btn" id="installBtn" style="display:none">Install app on this device</button>
+        <button class="btn danger" id="logoutBtn">Log out</button>
+      </div>
+      <div class="card">
+        <h3>Add to home screen</h3>
+        <p class="small muted"><b>iPhone (Safari):</b> Share → Add to Home Screen.<br>
+        <b>Android (Chrome):</b> ⋮ menu → Install app / Add to Home screen.</p>
+      </div>
+    </div>
+  </main>
+
+  <button class="fab" id="fab" aria-label="Add transaction">+</button>
+
+  <nav class="bottom">
+    <button data-tab="home" class="active"><span>🏠</span>Home</button>
+    <button data-tab="tx"><span>🧾</span>History</button>
+    <button data-tab="cat"><span>📊</span>Categories</button>
+    <button data-tab="more"><span>⚙️</span>More</button>
+  </nav>
+</section>
+
+<!-- ============ ADD SHEET (features 1 & 2) ============ -->
+<div id="sheetBackdrop" class="backdrop hidden"></div>
+<div id="sheet" class="sheet hidden" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div class="seg" id="typeSeg">
+    <button class="active" data-type="expense">Expense</button>
+    <button data-type="income">Income</button>
+  </div>
+  <form id="txForm">
+    <label>Amount
+      <input id="txAmount" type="number" inputmode="decimal" step="0.01" min="0.01" placeholder="0.00" required>
+    </label>
+    <label>Category
+      <input id="txCat" list="catOptions" placeholder="e.g. Food" maxlength="40" required autocomplete="off">
+      <datalist id="catOptions"></datalist>
+    </label>
+    <div class="chips" id="catChips"></div>
+    <label>Note (optional)
+      <input id="txNote" maxlength="200" placeholder="e.g. lunch with friends">
+    </label>
+    <label>Date
+      <input id="txDate" type="date" required>
+    </label>
+    <div id="txErr" class="error"></div>
+    <div class="row two">
+      <button type="button" class="btn" id="cancelTx">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ BUDGET SHEET (feature 4) ============ -->
+<div id="budgetSheet" class="sheet hidden" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h3>Budget for <span id="budgetMonthLabel"></span></h3>
+  <form id="budgetForm">
+    <label>Amount
+      <input id="budgetInput" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required>
+    </label>
+    <div id="budgetErr" class="error"></div>
+    <div class="row two">
+      <button type="button" class="btn" id="cancelBudget">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
