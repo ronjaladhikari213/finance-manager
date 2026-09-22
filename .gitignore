@@ -1,0 +1,6 @@
+finance.db
+*.db
+.secret_key
+__pycache__/
+*.pyc
+.venv/

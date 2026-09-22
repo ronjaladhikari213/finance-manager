@@ -1,0 +1,5 @@
+Flask>=3.0,<4
+gunicorn>=22.0
+# Only needed if you set DATABASE_URL to use Postgres instead of the default
+# SQLite file (recommended on hosts with an ephemeral filesystem -- see README.md).
+psycopg[binary]>=3.1

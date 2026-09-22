@@ -1,0 +1,27 @@
+# One-click deploy blueprint for Render.com.
+#
+# IMPORTANT: Render's FREE web services have an ephemeral filesystem -- any
+# local file (including a SQLite database) is wiped on every redeploy/restart.
+# Persistent disks (which would let SQLite survive) require a PAID Render plan.
+# So this blueprint uses a free Neon Postgres database instead (see README.md
+# for the 2-minute setup) and points DATABASE_URL at it. If you're fine paying
+# for Render's smallest paid web service + a 1GB disk, you can use SQLite
+# instead -- set FINANCE_DB=/var/data/finance.db and attach a disk at
+# /var/data in the Render dashboard; just don't do that on the Free plan or
+# your data will disappear.
+services:
+  - type: web
+    name: finance-manager
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: HTTPS
+        value: "1"
+      - key: CURRENCY
+        value: Rs
+      - key: DATABASE_URL
+        sync: false # paste your Neon/Supabase Postgres connection string in the Render dashboard
